@@ -188,6 +188,7 @@ export default function CalculatorPage() {
   const [cryptoTaxMethod, setCryptoTaxMethod] = useState<CryptoTaxMethod>("cgt");
   const [selectedState, setSelectedState] = useState("");
   const [taxYear, setTaxYear] = useState<"2025" | "2026">("2025");
+  const [annualRent, setAnnualRent] = useState<string>("");
   const [isCalculating, setIsCalculating] = useState(false);
 
   // Handle income input with formatting
@@ -731,6 +732,31 @@ export default function CalculatorPage() {
                   <option value="2026">2026</option>
                 </select>
               </div>
+
+              {/* Rent Relief - only for 2026 */}
+              {taxYear === "2026" && (
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    Annual Rent (for Rent Relief)
+                  </label>
+                  <div className={`flex items-center rounded-lg border overflow-hidden ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-white border-gray-300"}`}>
+                    <span className={`px-3 py-3 text-lg font-medium ${isDarkMode ? "bg-gray-600 text-gray-300" : "bg-gray-100 text-gray-500"}`}>
+                      ₦
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="e.g. 1,200,000"
+                      value={annualRent}
+                      onChange={(e) => setAnnualRent(formatWithCommas(e.target.value))}
+                      className={`flex-1 px-4 py-3 focus:outline-none ${isDarkMode ? "bg-gray-700 text-gray-100" : "bg-white text-gray-900"}`}
+                    />
+                  </div>
+                  <p className={`text-xs mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    ✨ You can deduct 20% of your rent (max ₦500,000). Leave empty to skip.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Navigation */}
@@ -774,6 +800,13 @@ export default function CalculatorPage() {
           // Check if crypto CGT applies
           const isCryptoCGT = userType === "crypto" && cryptoTaxMethod === "cgt";
 
+          // Calculate Rent Relief for 2026 (20% of rent, max ₦500,000)
+          const rentAmount = parseFormattedNumber(annualRent);
+          const rentRelief = taxYear === "2026" ? Math.min(rentAmount * 0.2, 500_000) : 0;
+
+          // Apply rent relief to income
+          const incomeAfterRentRelief = Math.max(yearlyIncome - rentRelief, 0);
+
           // Calculate tax based on method
           let tax: number;
           let relief: number;
@@ -788,14 +821,14 @@ export default function CalculatorPage() {
             breakdown = [`₦${yearlyIncome.toLocaleString()} @ 10% = ₦${tax.toLocaleString()}`];
           } else if (isCryptoCGT && taxYear === "2026") {
             // 2026: CGT now uses progressive rates (per Nigeria Tax Act 2025)
-            const result = calculateTax(yearlyIncome, "2026");
+            const result = calculateTax(incomeAfterRentRelief, "2026");
             tax = result.tax;
             relief = result.relief;
             taxableIncome = result.taxableIncome;
             breakdown = result.breakdown;
           } else {
             // Personal Income Tax: progressive PAYE bands
-            const result = calculateTax(yearlyIncome, taxYear);
+            const result = calculateTax(incomeAfterRentRelief, taxYear);
             tax = result.tax;
             relief = result.relief;
             taxableIncome = result.taxableIncome;
@@ -907,8 +940,13 @@ export default function CalculatorPage() {
                     <li>
                       • Your income: <strong>₦{yearlyIncome.toLocaleString()}</strong>
                     </li>
+                    {rentRelief > 0 && (
+                      <li className={isDarkMode ? "text-green-400" : "text-green-600"}>
+                        • Rent relief applied: <strong>₦{rentRelief.toLocaleString()}</strong> (20% of rent)
+                      </li>
+                    )}
                     <li>
-                      • Taxable income (after threshold): <strong>₦{taxableIncome.toLocaleString()}</strong>
+                      • Taxable income (after deductions): <strong>₦{taxableIncome.toLocaleString()}</strong>
                     </li>
                     <li>
                       • New progressive rates applied: <strong>15% - 25%</strong>
@@ -935,6 +973,92 @@ export default function CalculatorPage() {
                       </li>
                     )}
                   </ul>
+                )}
+              </div>
+
+              {/* Tax Benefits Info Box */}
+              <div className={`rounded-xl border p-6 mb-8 ${isDarkMode ? "bg-blue-900/20 border-blue-700" : "bg-blue-50 border-blue-200"}`}>
+                <h3 className={`font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-blue-300" : "text-blue-800"}`}>
+                  💡 Your Tax Benefits
+                </h3>
+
+                {userType === "salary" && (
+                  <div className={`text-sm space-y-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    <p><strong>As a salary earner, you receive:</strong></p>
+                    <ul className="list-disc ml-5 space-y-1">
+                      {taxYear === "2025" ? (
+                        <>
+                          <li>Consolidated Relief Allowance (CRA) - automatically applied</li>
+                          <li>20% of income + ₦200,000 (or 1% of income) as tax relief</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>₦800,000 tax-free threshold - first ₦800k is not taxed</li>
+                          <li>Rent Relief - up to 20% of annual rent (max ₦500,000)</li>
+                        </>
+                      )}
+                    </ul>
+                    <p className={`mt-3 text-xs ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
+                      Note: Salary earners cannot deduct business expenses as tax is deducted at source.
+                    </p>
+                  </div>
+                )}
+
+                {(userType === "freelancer" || userType === "both") && (
+                  <div className={`text-sm space-y-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    <p><strong>As self-employed, you can deduct:</strong></p>
+                    <ul className="list-disc ml-5 space-y-1">
+                      <li>Internet & data costs</li>
+                      <li>Tools & software subscriptions</li>
+                      <li>Rent / workspace expenses</li>
+                      <li>Other legitimate business expenses</li>
+                      {taxYear === "2025" ? (
+                        <li>Consolidated Relief Allowance (CRA)</li>
+                      ) : (
+                        <>
+                          <li>₦800,000 tax-free threshold</li>
+                          <li>Rent Relief (up to ₦500,000)</li>
+                        </>
+                      )}
+                    </ul>
+                    <p className={`mt-3 text-xs ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
+                      Tip: Keep receipts for all business expenses for tax filing.
+                    </p>
+                  </div>
+                )}
+
+                {userType === "crypto" && (
+                  <div className={`text-sm space-y-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    <p><strong>As a crypto trader:</strong></p>
+                    {isCryptoCGT && taxYear === "2025" ? (
+                      <ul className="list-disc ml-5 space-y-1">
+                        <li>10% flat Capital Gains Tax rate</li>
+                        <li>No additional deductions available with CGT</li>
+                        <li>Consider PIT if you have significant trading expenses</li>
+                      </ul>
+                    ) : (
+                      <ul className="list-disc ml-5 space-y-1">
+                        {taxYear === "2026" ? (
+                          <>
+                            <li>₦800,000 tax-free threshold applies</li>
+                            <li>Progressive rates (15% - 25%) on profits</li>
+                            <li>Rent Relief available (up to ₦500,000)</li>
+                          </>
+                        ) : (
+                          <>
+                            <li>Treated as personal income (PIT)</li>
+                            <li>Consolidated Relief Allowance applies</li>
+                            <li>Trading expenses may be deductible</li>
+                          </>
+                        )}
+                      </ul>
+                    )}
+                    <p className={`mt-3 text-xs ${isDarkMode ? "text-gray-500" : "text-gray-500"}`}>
+                      {taxYear === "2026"
+                        ? "Note: In 2026, CGT uses progressive rates same as PIT."
+                        : "Tip: CGT is simpler, but PIT may result in lower tax if you have expenses."}
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -975,7 +1099,7 @@ export default function CalculatorPage() {
                 /* PAYE bands table (year-aware) */
                 <div className="mb-8">
                   <h2 className={`font-semibold mb-4 ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>
-                    {taxYear === "2026" ? "Nigeria Tax Act 2025 - New Tax Bands" : "Nigerian PAYE Tax Bands"}
+                    {taxYear === "2026" ? "2026 Tax Bands (New Reform)" : "2025 PAYE Tax Bands"}
                   </h2>
 
                   <p className={`text-sm mb-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
@@ -1075,7 +1199,8 @@ export default function CalculatorPage() {
                     </div>
                   </div>
                 </div>
-              )}
+              )
+              }
 
               {/* Actions */}
               <div className="flex items-center justify-between no-print">
