@@ -341,8 +341,9 @@ export default function CalculatorPage() {
               <p className="font-medium mb-2">📋 Quick Guide:</p>
               <ul className="space-y-1 text-xs">
                 <li>• <strong>Salary earners:</strong> Employees receiving PAYE wages</li>
-                <li>• <strong>Freelancers:</strong> Artisans, FX traders, consultants, business owners</li>
+                <li>• <strong>Freelancers:</strong> Artisans, FX traders, consultants, self-employed</li>
                 <li>• <strong>Crypto traders:</strong> Cryptocurrency investors & traders</li>
+                <li className="text-gray-500">• <em>Registered businesses pay different taxes (CIT)</em></li>
               </ul>
               <p className="mt-3 text-xs">
                 For official tax guidelines, visit{" "}
