@@ -521,78 +521,77 @@ export default function CalculatorPage() {
         {/* STEP 3 - Business Expenses (for non-crypto) */}
         {step === 3 && userType !== "crypto" && (
           <div className="mt-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className={`text-2xl font-bold mb-2 ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>
               Business & work expenses
             </h1>
 
-            <p className="text-sm text-gray-600 mb-6">
-              If you’re self-employed, some work-related expenses can reduce the tax you pay.
-              If you’re unsure, you can skip this step.
+            <p className={`text-sm mb-6 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+              If you're self-employed, some work-related expenses can reduce the tax you pay.
+              If you're unsure, you can skip this step.
             </p>
 
             <div className="space-y-4 mb-8">
               <div>
-                <label className="text-sm text-gray-600">Internet & data</label>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Internet & data
+                </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={expenses.internet}
-                  onChange={(e) =>
-                    handleExpenseChange("internet", e.target.value)
-                  }
-
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-
+                  onChange={(e) => handleExpenseChange("internet", e.target.value)}
+                  className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-gray-100"
+                      : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Tools & software</label>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Tools & software
+                </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={expenses.tools}
-                  onChange={(e) =>
-                    handleExpenseChange("tools", e.target.value)
-                  }
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
-
+                  onChange={(e) => handleExpenseChange("tools", e.target.value)}
+                  className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-gray-100"
+                      : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
                   Rent / workspace
                 </label>
-
                 <input
                   type="text"
                   inputMode="numeric"
                   value={expenses.rent}
-                  onChange={(e) =>
-                    handleExpenseChange("rent", e.target.value)
-                  }
-
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-600"
+                  onChange={(e) => handleExpenseChange("rent", e.target.value)}
+                  className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-gray-100"
+                      : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
-
               </div>
 
               <div>
-                <label className="text-sm text-gray-600">Other expenses</label>
+                <label className={`block text-sm font-medium mb-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  Other expenses
+                </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={expenses.others}
-                  onChange={(e) =>
-                    handleExpenseChange("others", e.target.value)
-                  }
-
-                  className="w-full mt-1 px-4 py-3 border rounded-lg
-          text-lg font-semibold text-gray-900
-          placeholder-gray-400
-          focus:outline-none focus:ring-2 focus:ring-green-200"
-
+                  onChange={(e) => handleExpenseChange("others", e.target.value)}
+                  className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-gray-100"
+                      : "bg-white border-gray-300 text-gray-900"
+                    }`}
                 />
               </div>
             </div>
@@ -601,15 +600,14 @@ export default function CalculatorPage() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="text-sm text-gray-600 hover:text-gray-900 cursor-pointer"
+                className={`text-sm ${isDarkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-600 hover:text-gray-900"}`}
               >
                 ← Back
               </button>
 
               <button
                 onClick={() => setStep(4)}
-                className="px-6 py-3 rounded-lg font-medium text-white
-                   bg-green-600 hover:bg-green-700"
+                className="px-6 py-3 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700"
               >
                 Continue →
               </button>
