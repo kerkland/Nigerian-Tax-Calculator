@@ -879,13 +879,13 @@ export default function CalculatorPage() {
               </div>
 
               {/* Explanation */}
-              <div className="rounded-xl bg-gray-50 border p-6 mb-8">
-                <h2 className="font-semibold text-gray-900 mb-3">
-                  How this was calculated
+              <div className={`rounded-xl border p-6 mb-8 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-gray-50"}`}>
+                <h2 className={`font-semibold mb-3 ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>
+                  How your {taxYear} tax was calculated
                 </h2>
 
-                {isCryptoCGT ? (
-                  <ul className="text-sm text-gray-700 space-y-2">
+                {isCryptoCGT && taxYear === "2025" ? (
+                  <ul className={`text-sm space-y-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
                     <li>
                       • Tax method: <strong>Capital Gains Tax</strong>
                     </li>
@@ -896,14 +896,34 @@ export default function CalculatorPage() {
                       • Crypto profit: <strong>₦{yearlyIncome.toLocaleString()}</strong>
                     </li>
                     <li>
-                      • Tax payable: <strong>₦{tax.toLocaleString()}</strong>
+                      • Tax payable: <strong>₦{Math.round(tax).toLocaleString()}</strong>
                     </li>
                   </ul>
+                ) : taxYear === "2026" ? (
+                  <ul className={`text-sm space-y-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    <li>
+                      • Tax-free threshold: <strong>₦800,000</strong> (0% tax)
+                    </li>
+                    <li>
+                      • Your income: <strong>₦{yearlyIncome.toLocaleString()}</strong>
+                    </li>
+                    <li>
+                      • Taxable income (after threshold): <strong>₦{taxableIncome.toLocaleString()}</strong>
+                    </li>
+                    <li>
+                      • New progressive rates applied: <strong>15% - 25%</strong>
+                    </li>
+                    {userType !== "salary" && userType !== "crypto" && (
+                      <li>
+                        • Business expenses deducted where applicable
+                      </li>
+                    )}
+                  </ul>
                 ) : (
-                  <ul className="text-sm text-gray-700 space-y-2">
+                  <ul className={`text-sm space-y-2 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
                     <li>
                       • Consolidated relief allowance:{" "}
-                      <strong>₦{relief.toLocaleString()}</strong>
+                      <strong>₦{Math.round(relief).toLocaleString()}</strong>
                     </li>
                     <li>
                       • Taxable income after relief:{" "}
