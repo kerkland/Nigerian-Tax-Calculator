@@ -247,18 +247,7 @@ export default function CalculatorPage() {
   return (
     <div className={`min-h-screen flex items-center justify-center py-8 px-4 transition-colors ${isDarkMode ? "bg-gray-900" : "bg-gray-50"}`}>
       <div className={`w-full max-w-xl rounded-xl p-6 transition-colors ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border`}>
-        <div className="mb-10 text-center relative">
-          {/* Dark mode toggle */}
-          <button
-            onClick={toggleDarkMode}
-            className={`absolute top-0 right-0 p-2 rounded-lg transition-colors no-print ${isDarkMode
-              ? "bg-gray-700 hover:bg-gray-600 text-yellow-400"
-              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-              }`}
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? "☀️" : "🌙"}
-          </button>
+        <div className="mb-10 text-center">
 
           {/* Title */}
           <h2 className="text-2xl font-bold flex justify-center items-center gap-2">
@@ -991,8 +980,8 @@ export default function CalculatorPage() {
                       window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(url)}`, '_blank');
                     }}
                     className={`px-4 py-3 rounded-lg font-medium border transition ${isDarkMode
-                        ? "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-600"
-                        : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                      ? "bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-600"
+                      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                       }`}
                   >
                     Share on 𝕏
@@ -1099,7 +1088,7 @@ export default function CalculatorPage() {
         )}
 
         {/* Footer */}
-        <div className={`mt-8 pt-6 border-t text-center ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+        <div className={`mt-8 pt-6 border-t flex items-center justify-between ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
           <p className={`text-sm ${isDarkMode ? "text-gray-500" : "text-gray-400"}`}>
             Designed by{" "}
             <a
@@ -1111,6 +1100,18 @@ export default function CalculatorPage() {
               @mysucesstory
             </a>
           </p>
+
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className={`p-2 rounded-lg transition-colors no-print ${isDarkMode
+              ? "bg-gray-700 hover:bg-gray-600 text-yellow-400"
+              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+              }`}
+            aria-label="Toggle dark mode"
+          >
+            {isDarkMode ? "☀️" : "🌙"}
+          </button>
         </div>
 
       </div>
