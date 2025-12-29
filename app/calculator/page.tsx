@@ -140,7 +140,7 @@ export default function CalculatorPage() {
   const [userType, setUserType] = useState<UserType | null>(null);
   const [cryptoTaxMethod, setCryptoTaxMethod] = useState<CryptoTaxMethod>("cgt");
   const [selectedState, setSelectedState] = useState("");
-  const [taxYear, setTaxYear] = useState<"2024" | "2025">("2024");
+  const [taxYear, setTaxYear] = useState<"2025" | "2026">("2025");
   const [isCalculating, setIsCalculating] = useState(false);
 
   // Handle income input with formatting
@@ -334,6 +334,27 @@ export default function CalculatorPage() {
                 <span className="text-xl">🪙</span>
                 <span className="font-medium">I trade cryptocurrency</span>
               </button>
+            </div>
+
+            {/* Category Guide */}
+            <div className={`mt-6 p-4 rounded-lg text-sm ${isDarkMode ? "bg-gray-700/50 text-gray-300" : "bg-gray-100 text-gray-600"}`}>
+              <p className="font-medium mb-2">📋 Quick Guide:</p>
+              <ul className="space-y-1 text-xs">
+                <li>• <strong>Salary earners:</strong> Employees receiving PAYE wages</li>
+                <li>• <strong>Freelancers:</strong> Artisans, FX traders, consultants, business owners</li>
+                <li>• <strong>Crypto traders:</strong> Cryptocurrency investors & traders</li>
+              </ul>
+              <p className="mt-3 text-xs">
+                For official tax guidelines, visit{" "}
+                <a
+                  href="https://www.firs.gov.ng"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`font-medium underline ${isDarkMode ? "text-green-400" : "text-green-600"}`}
+                >
+                  FIRS.gov.ng
+                </a>
+              </p>
             </div>
           </div>
         )}
@@ -654,14 +675,14 @@ export default function CalculatorPage() {
                 </label>
                 <select
                   value={taxYear}
-                  onChange={(e) => setTaxYear(e.target.value as "2024" | "2025")}
+                  onChange={(e) => setTaxYear(e.target.value as "2025" | "2026")}
                   className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
                     ? "bg-gray-700 border-gray-600 text-gray-100"
                     : "bg-white border-gray-300 text-gray-900"
                     }`}
                 >
-                  <option value="2024">2024</option>
                   <option value="2025">2025</option>
+                  <option value="2026">2026</option>
                 </select>
               </div>
             </div>
@@ -773,8 +794,8 @@ export default function CalculatorPage() {
 
                 <div className={`rounded-xl border p-5 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-white"}`}>
                   <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Monthly tax</p>
-                  <p className={`text-xl font-semibold mt-1 ${isDarkMode ? "text-gray-100" : ""}`}>
-                    ₦{monthlyTax.toLocaleString()}
+                  <p className={`text-lg md:text-xl font-semibold mt-1 truncate ${isDarkMode ? "text-gray-100" : ""}`}>
+                    ₦{Math.round(monthlyTax).toLocaleString()}
                   </p>
                 </div>
 
