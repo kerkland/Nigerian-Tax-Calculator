@@ -38,12 +38,59 @@ const parseFormattedNumber = (value: string): number => {
   return Number(value.replace(/,/g, "")) || 0;
 };
 
-function calculateTax(annualIncome: number): {
+function calculateTax(annualIncome: number, year: "2025" | "2026" = "2025"): {
   tax: number;
   relief: number;
   taxableIncome: number;
   breakdown: string[];
 } {
+  // 2026 Tax Reform (Nigeria Tax Act 2025 - effective Jan 1, 2026)
+  if (year === "2026") {
+    // New ₦800,000 tax-free threshold
+    const taxFreeThreshold = 800_000;
+
+    // No CRA in 2026 - just uses the new bands with the threshold
+    const relief = 0; // CRA abolished
+    const taxableIncome = Math.max(annualIncome - taxFreeThreshold, 0);
+
+    // New 2026 tax bands (after the ₦800k threshold)
+    const bands = [
+      { limit: 2_200_000, rate: 0.15 },   // ₦800,001 - ₦3,000,000 (2.2M after threshold)
+      { limit: 9_000_000, rate: 0.18 },   // ₦3,000,001 - ₦12,000,000
+      { limit: 13_000_000, rate: 0.21 },  // ₦12,000,001 - ₦25,000,000
+      { limit: 25_000_000, rate: 0.23 },  // ₦25,000,001 - ₦50,000,000
+      { limit: Infinity, rate: 0.25 },    // Above ₦50,000,000
+    ];
+
+    let remaining = taxableIncome;
+    let tax = 0;
+    const breakdown: string[] = [];
+
+    if (annualIncome <= taxFreeThreshold) {
+      breakdown.push(`Income ₦${annualIncome.toLocaleString()} is tax-free (below ₦800,000 threshold)`);
+      return { tax: 0, relief: 0, taxableIncome: 0, breakdown };
+    }
+
+    breakdown.push(`Tax-free threshold: ₦${taxFreeThreshold.toLocaleString()} @ 0% = ₦0`);
+
+    for (const band of bands) {
+      if (remaining <= 0) break;
+
+      const amount = Math.min(remaining, band.limit);
+      const bandTax = amount * band.rate;
+
+      tax += bandTax;
+      remaining -= amount;
+
+      breakdown.push(
+        `₦${amount.toLocaleString()} @ ${(band.rate * 100).toFixed(0)}% = ₦${Math.round(bandTax).toLocaleString()}`
+      );
+    }
+
+    return { tax, relief, taxableIncome, breakdown };
+  }
+
+  // 2025 Tax Bands (Current PAYE with CRA)
   // Consolidated relief allowance (Nigeria)
   const relief =
     Math.max(200_000, annualIncome * 0.01) + annualIncome * 0.2;
@@ -541,8 +588,8 @@ export default function CalculatorPage() {
                   value={expenses.internet}
                   onChange={(e) => handleExpenseChange("internet", e.target.value)}
                   className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
-                      ? "bg-gray-700 border-gray-600 text-gray-100"
-                      : "bg-white border-gray-300 text-gray-900"
+                    ? "bg-gray-700 border-gray-600 text-gray-100"
+                    : "bg-white border-gray-300 text-gray-900"
                     }`}
                 />
               </div>
@@ -557,8 +604,8 @@ export default function CalculatorPage() {
                   value={expenses.tools}
                   onChange={(e) => handleExpenseChange("tools", e.target.value)}
                   className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
-                      ? "bg-gray-700 border-gray-600 text-gray-100"
-                      : "bg-white border-gray-300 text-gray-900"
+                    ? "bg-gray-700 border-gray-600 text-gray-100"
+                    : "bg-white border-gray-300 text-gray-900"
                     }`}
                 />
               </div>
@@ -573,8 +620,8 @@ export default function CalculatorPage() {
                   value={expenses.rent}
                   onChange={(e) => handleExpenseChange("rent", e.target.value)}
                   className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
-                      ? "bg-gray-700 border-gray-600 text-gray-100"
-                      : "bg-white border-gray-300 text-gray-900"
+                    ? "bg-gray-700 border-gray-600 text-gray-100"
+                    : "bg-white border-gray-300 text-gray-900"
                     }`}
                 />
               </div>
@@ -589,8 +636,8 @@ export default function CalculatorPage() {
                   value={expenses.others}
                   onChange={(e) => handleExpenseChange("others", e.target.value)}
                   className={`w-full rounded-lg border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600 ${isDarkMode
-                      ? "bg-gray-700 border-gray-600 text-gray-100"
-                      : "bg-white border-gray-300 text-gray-900"
+                    ? "bg-gray-700 border-gray-600 text-gray-100"
+                    : "bg-white border-gray-300 text-gray-900"
                     }`}
                 />
               </div>
@@ -733,15 +780,22 @@ export default function CalculatorPage() {
           let taxableIncome: number;
           let breakdown: string[];
 
-          if (isCryptoCGT) {
-            // Capital Gains Tax: 10% flat rate
+          if (isCryptoCGT && taxYear === "2025") {
+            // 2025: Capital Gains Tax: 10% flat rate
             tax = yearlyIncome * 0.1;
             relief = 0;
             taxableIncome = yearlyIncome;
             breakdown = [`₦${yearlyIncome.toLocaleString()} @ 10% = ₦${tax.toLocaleString()}`];
+          } else if (isCryptoCGT && taxYear === "2026") {
+            // 2026: CGT now uses progressive rates (per Nigeria Tax Act 2025)
+            const result = calculateTax(yearlyIncome, "2026");
+            tax = result.tax;
+            relief = result.relief;
+            taxableIncome = result.taxableIncome;
+            breakdown = result.breakdown;
           } else {
             // Personal Income Tax: progressive PAYE bands
-            const result = calculateTax(yearlyIncome);
+            const result = calculateTax(yearlyIncome, taxYear);
             tax = result.tax;
             relief = result.relief;
             taxableIncome = result.taxableIncome;
@@ -753,14 +807,16 @@ export default function CalculatorPage() {
           return (
             <div>
               {/* Title */}
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Your tax estimate
+              <h1 className={`text-2xl font-bold mb-2 ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>
+                Your {taxYear} tax estimate
               </h1>
 
-              <p className="text-sm text-gray-600 mb-8">
-                {isCryptoCGT
-                  ? "This estimate is based on Nigeria's Capital Gains Tax rate of 10%."
-                  : "This is an estimate based on Nigerian personal income tax rules."}
+              <p className={`text-sm mb-8 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                {taxYear === "2026"
+                  ? "Based on the new Nigeria Tax Act 2025 (effective Jan 1, 2026)."
+                  : isCryptoCGT
+                    ? "This estimate is based on Nigeria's Capital Gains Tax rate of 10%."
+                    : "This is an estimate based on Nigerian personal income tax rules."}
               </p>
 
               {/* Tax method badge for crypto */}
@@ -779,21 +835,21 @@ export default function CalculatorPage() {
                   <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
                     {userType === "crypto" ? "Annual crypto profit" : "Annual income"}
                   </p>
-                  <p className={`text-xl font-semibold mt-1 ${isDarkMode ? "text-gray-100" : ""}`}>
+                  <p className={`text-base md:text-xl font-semibold mt-1 truncate ${isDarkMode ? "text-gray-100" : ""}`}>
                     ₦{yearlyIncome.toLocaleString()}
                   </p>
                 </div>
 
                 <div className={`rounded-xl border p-5 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-white"}`}>
                   <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Total tax (yearly)</p>
-                  <p className="text-xl font-semibold mt-1 text-green-600">
-                    ₦{tax.toLocaleString()}
+                  <p className="text-base md:text-xl font-semibold mt-1 text-green-600 truncate">
+                    ₦{Math.round(tax).toLocaleString()}
                   </p>
                 </div>
 
                 <div className={`rounded-xl border p-5 ${isDarkMode ? "bg-gray-700 border-gray-600" : "bg-white"}`}>
                   <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>Monthly tax</p>
-                  <p className={`text-lg md:text-xl font-semibold mt-1 truncate ${isDarkMode ? "text-gray-100" : ""}`}>
+                  <p className={`text-base md:text-xl font-semibold mt-1 truncate ${isDarkMode ? "text-gray-100" : ""}`}>
                     ₦{Math.round(monthlyTax).toLocaleString()}
                   </p>
                 </div>
@@ -814,8 +870,8 @@ export default function CalculatorPage() {
                 <p className={`text-sm font-medium mb-1 ${isDarkMode ? "text-green-400" : "text-green-700"}`}>
                   💰 Your Annual Take-Home Pay
                 </p>
-                <p className={`text-3xl font-bold ${isDarkMode ? "text-green-300" : "text-green-700"}`}>
-                  ₦{(yearlyIncome - tax).toLocaleString()}
+                <p className={`text-2xl md:text-3xl font-bold ${isDarkMode ? "text-green-300" : "text-green-700"}`}>
+                  ₦{Math.round(yearlyIncome - tax).toLocaleString()}
                 </p>
                 <p className={`text-sm mt-2 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
                   Monthly: ₦{((yearlyIncome - tax) / 12).toLocaleString()}
@@ -863,111 +919,139 @@ export default function CalculatorPage() {
               </div>
 
               {/* Tax Breakdown Section */}
-              {isCryptoCGT ? (
-                /* Simple CGT explanation for crypto traders */
+              {isCryptoCGT && taxYear === "2025" ? (
+                /* Simple CGT explanation for crypto traders in 2025 */
                 <div className="mb-8">
-                  <h2 className="font-semibold text-gray-900 mb-4">
+                  <h2 className={`font-semibold mb-4 ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>
                     Capital Gains Tax Calculation
                   </h2>
 
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                  <div className={`rounded-lg p-6 ${isDarkMode ? "bg-purple-900/30 border border-purple-700" : "bg-purple-50 border border-purple-200"}`}>
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-3xl">📈</span>
                       <div>
-                        <p className="font-semibold text-gray-900">10% Flat Rate</p>
-                        <p className="text-sm text-gray-600">Applied to your crypto profits</p>
+                        <p className={`font-semibold ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>10% Flat Rate</p>
+                        <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>Applied to your crypto profits</p>
                       </div>
                     </div>
 
                     <div className="space-y-3 text-sm">
-                      <div className="flex justify-between py-2 border-b border-purple-200">
-                        <span className="text-gray-600">Crypto Profit</span>
-                        <span className="font-medium text-gray-900">₦{yearlyIncome.toLocaleString()}</span>
+                      <div className={`flex justify-between py-2 border-b ${isDarkMode ? "border-purple-700" : "border-purple-200"}`}>
+                        <span className={isDarkMode ? "text-gray-400" : "text-gray-600"}>Crypto Profit</span>
+                        <span className={`font-medium ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>₦{yearlyIncome.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between py-2 border-b border-purple-200">
-                        <span className="text-gray-600">Tax Rate</span>
-                        <span className="font-medium text-gray-900">10%</span>
+                      <div className={`flex justify-between py-2 border-b ${isDarkMode ? "border-purple-700" : "border-purple-200"}`}>
+                        <span className={isDarkMode ? "text-gray-400" : "text-gray-600"}>Tax Rate</span>
+                        <span className={`font-medium ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>10%</span>
                       </div>
                       <div className="flex justify-between py-2">
-                        <span className="font-semibold text-gray-900">Tax Payable</span>
-                        <span className="font-bold text-purple-700">₦{tax.toLocaleString()}</span>
+                        <span className={`font-semibold ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>Tax Payable</span>
+                        <span className="font-bold text-purple-500">₦{tax.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                /* Full PAYE bands table for non-CGT */
+                /* PAYE bands table (year-aware) */
                 <div className="mb-8">
-                  <h2 className="font-semibold text-gray-900 mb-4">
-                    Nigerian PAYE Tax Bands
+                  <h2 className={`font-semibold mb-4 ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>
+                    {taxYear === "2026" ? "Nigeria Tax Act 2025 - New Tax Bands" : "Nigerian PAYE Tax Bands"}
                   </h2>
 
-                  <p className="text-sm text-gray-600 mb-4">
-                    Nigeria uses a progressive tax system. Your taxable income of{" "}
-                    <strong className="text-gray-900">₦{taxableIncome.toLocaleString()}</strong>{" "}
-                    is taxed across these bands:
+                  <p className={`text-sm mb-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    {taxYear === "2026"
+                      ? <>The first <strong>₦800,000</strong> is tax-free. Your taxable income of{" "}
+                        <strong className={isDarkMode ? "text-gray-100" : "text-gray-900"}>₦{taxableIncome.toLocaleString()}</strong>{" "}
+                        is taxed using the new progressive bands:</>
+                      : <>Nigeria uses a progressive tax system. Your taxable income of{" "}
+                        <strong className={isDarkMode ? "text-gray-100" : "text-gray-900"}>₦{taxableIncome.toLocaleString()}</strong>{" "}
+                        is taxed across these bands:</>}
                   </p>
 
                   {/* Tax bands table */}
-                  <div className="border rounded-lg overflow-hidden mb-6">
+                  <div className={`border rounded-lg overflow-hidden mb-6 ${isDarkMode ? "border-gray-700" : ""}`}>
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-100">
+                      <thead className={isDarkMode ? "bg-gray-700" : "bg-gray-100"}>
                         <tr>
-                          <th className="text-left px-4 py-3 font-medium text-gray-700">Income Band</th>
-                          <th className="text-center px-4 py-3 font-medium text-gray-700">Rate</th>
-                          <th className="text-right px-4 py-3 font-medium text-gray-700">Tax</th>
+                          <th className={`text-left px-4 py-3 font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Income Band</th>
+                          <th className={`text-center px-4 py-3 font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Rate</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        <tr className="bg-white">
-                          <td className="px-4 py-3 text-gray-700">First ₦300,000</td>
-                          <td className="px-4 py-3 text-center text-gray-700">7%</td>
-                          <td className="px-4 py-3 text-right text-gray-900">₦21,000</td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="px-4 py-3 text-gray-700">Next ₦300,000</td>
-                          <td className="px-4 py-3 text-center text-gray-700">11%</td>
-                          <td className="px-4 py-3 text-right text-gray-900">₦33,000</td>
-                        </tr>
-                        <tr className="bg-white">
-                          <td className="px-4 py-3 text-gray-700">Next ₦500,000</td>
-                          <td className="px-4 py-3 text-center text-gray-700">15%</td>
-                          <td className="px-4 py-3 text-right text-gray-900">₦75,000</td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="px-4 py-3 text-gray-700">Next ₦500,000</td>
-                          <td className="px-4 py-3 text-center text-gray-700">19%</td>
-                          <td className="px-4 py-3 text-right text-gray-900">₦95,000</td>
-                        </tr>
-                        <tr className="bg-white">
-                          <td className="px-4 py-3 text-gray-700">Next ₦1,600,000</td>
-                          <td className="px-4 py-3 text-center text-gray-700">21%</td>
-                          <td className="px-4 py-3 text-right text-gray-900">₦336,000</td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="px-4 py-3 text-gray-700">Above ₦3,200,000</td>
-                          <td className="px-4 py-3 text-center text-gray-700">24%</td>
-                          <td className="px-4 py-3 text-right text-gray-900">Variable</td>
-                        </tr>
+                        {taxYear === "2026" ? (
+                          <>
+                            <tr className={isDarkMode ? "bg-gray-800" : "bg-green-50"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-green-400" : "text-green-700"}`}>First ₦800,000</td>
+                              <td className={`px-4 py-3 text-center font-bold ${isDarkMode ? "text-green-400" : "text-green-700"}`}>0% (Tax-Free)</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-700" : "bg-white"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>₦800,001 - ₦3,000,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>15%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-800" : "bg-gray-50"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>₦3,000,001 - ₦12,000,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>18%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-700" : "bg-white"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>₦12,000,001 - ₦25,000,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>21%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-800" : "bg-gray-50"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>₦25,000,001 - ₦50,000,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>23%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-700" : "bg-white"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Above ₦50,000,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>25%</td>
+                            </tr>
+                          </>
+                        ) : (
+                          <>
+                            <tr className={isDarkMode ? "bg-gray-800" : "bg-white"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>First ₦300,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>7%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-700" : "bg-gray-50"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Next ₦300,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>11%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-800" : "bg-white"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Next ₦500,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>15%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-700" : "bg-gray-50"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Next ₦500,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>19%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-800" : "bg-white"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Next ₦1,600,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>21%</td>
+                            </tr>
+                            <tr className={isDarkMode ? "bg-gray-700" : "bg-gray-50"}>
+                              <td className={`px-4 py-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>Above ₦3,200,000</td>
+                              <td className={`px-4 py-3 text-center ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>24%</td>
+                            </tr>
+                          </>
+                        )}
                       </tbody>
                     </table>
                   </div>
 
                   {/* Your calculation breakdown */}
-                  <h3 className="font-medium text-gray-900 mb-3">
+                  <h3 className={`font-medium mb-3 ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>
                     Your tax calculation
                   </h3>
 
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                  <div className={`rounded-lg p-4 space-y-2 ${isDarkMode ? "bg-green-900/30 border border-green-700" : "bg-green-50 border border-green-200"}`}>
                     {breakdown.map((line: string, idx: number) => (
                       <div key={idx} className="flex items-center text-sm">
-                        <span className="text-green-600 mr-2">✓</span>
-                        <span className="text-gray-700">{line}</span>
+                        <span className="text-green-500 mr-2">✓</span>
+                        <span className={isDarkMode ? "text-gray-300" : "text-gray-700"}>{line}</span>
                       </div>
                     ))}
-                    <div className="border-t border-green-300 mt-3 pt-3 flex justify-between font-semibold">
-                      <span className="text-gray-900">Total Annual Tax</span>
-                      <span className="text-green-700">₦{tax.toLocaleString()}</span>
+                    <div className={`border-t mt-3 pt-3 flex justify-between font-semibold ${isDarkMode ? "border-green-700" : "border-green-300"}`}>
+                      <span className={isDarkMode ? "text-gray-100" : "text-gray-900"}>Total Annual Tax</span>
+                      <span className="text-green-500">₦{Math.round(tax).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
